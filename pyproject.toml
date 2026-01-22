@@ -1,0 +1,38 @@
+[project]
+name = "askit-server"
+version = "0.1.0"
+description = "AskIt Server API"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "asyncpg",
+    "bcrypt",
+    "faker",
+    "fastapi",
+    "greenlet",
+    "httpx",
+    "passlib",
+    "psycopg2-binary",
+    "pydantic>=2.0",
+    "pydantic-settings",
+    "pydantic[email]",
+    "pyjwt",
+    "pytest",
+    "pytest-asyncio",
+    "python-dotenv",
+    "redis",
+    "sqlalchemy",
+    "uvicorn[standard]",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
+    "mypy>=1.19.1",
+    "ruff>=0.14.13",
+]
+
+[tool.mypy]
+strict = true
+show_error_context = true
+show_error_codes = true
