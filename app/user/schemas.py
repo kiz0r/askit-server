@@ -8,13 +8,14 @@ class UserCreate(BaseModel):
     password: str
 
     @field_validator("username")
-    def username_valid(self, v):
+    @classmethod
+    def username_valid(cls, v: str) -> str:
         return AuthValidators.validate_username(v)
 
     @field_validator("password")
-    def password_valid(self, v):
+    @classmethod
+    def password_valid(cls, v: str) -> str:
         return AuthValidators.validate_password(v)
-
 
 class UserOut(BaseModel):
     userId: str
