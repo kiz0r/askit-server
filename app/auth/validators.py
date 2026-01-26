@@ -80,7 +80,7 @@ class AuthValidators:
             raise InvalidPasswordError("Password must contain at least one number")
 
         # Check for at least one special character (recommended)
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/;~`]', password):
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/;~`]', password):
             raise InvalidPasswordError(
                 "Password must contain at least one special character (!@#$%^&* etc.)"
             )
