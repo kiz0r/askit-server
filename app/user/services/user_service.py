@@ -6,6 +6,7 @@ from pydantic import EmailStr
 from app.models.user import User
 from app.auth.services.password_service import PasswordService
 from app.auth.exceptions import UserAlreadyExistsError, UsernameAlreadyExistsError
+from app.core.types import UserId
 
 password_service = PasswordService()
 
@@ -42,7 +43,7 @@ class UserService:
         return user.scalars().first()
 
     @staticmethod
-    async def get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
+    async def get_user_by_id(db: AsyncSession, user_id: UserId) -> User | None:
         return await db.get(User, user_id)
 
     @staticmethod
