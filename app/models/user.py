@@ -22,7 +22,7 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
 
-    # quizzes = relationship("Quiz", back_populates="creator")
+    quizzes = relationship("Quiz", back_populates="creator")
 
 
 class AnonymousUser(Base):
