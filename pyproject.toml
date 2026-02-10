@@ -24,6 +24,7 @@ dependencies = [
     "python-dotenv",
     "redis",
     "sqlalchemy",
+    "structlog>=24.0.0",
     "uvicorn[standard]",
 ]
 

@@ -14,12 +14,29 @@ from app.core.exception_handlers import (
     pydantic_validation_exception_handler,
     generic_exception_handler,
 )
+from app.settings import ENV_SETTINGS
+from app.core.logging import configure_logging, get_logger
+from app.core.middleware import RequestIDMiddleware
+
+
+# Configure structured logging
+configure_logging(
+    log_level=ENV_SETTINGS.LOG_LEVEL,
+    use_json=ENV_SETTINGS.LOG_JSON,
+)
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info(
+        "application_startup",
+        environment=ENV_SETTINGS.ENVIRONMENT,
+        port=ENV_SETTINGS.APP_PORT,
+    )
     await init_db()
     yield
+    logger.info("application_shutdown")
 
 
 app = FastAPI(
@@ -38,13 +55,12 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(ValidationError, pydantic_validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
-origins = [
-    "http://localhost:5173",  # TODO: Move to environment settings
-]
+# Add request ID tracking middleware (must be added before CORS)
+app.add_middleware(RequestIDMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ENV_SETTINGS.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
