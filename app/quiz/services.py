@@ -1,8 +1,10 @@
 from datetime import datetime
 from typing import List
+from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from attrs import frozen
 from app.models.user import User
 from app.models.quiz import Quiz, QuizQuestion, QuizAnswer
 from app.quiz.schemas import (
@@ -13,47 +15,87 @@ from app.quiz.schemas import (
     QuizAnswerOut,
 )
 from app.quiz.exceptions import InvalidQuizDataError
-from app.core.types import to_quiz_id, to_question_id, to_answer_id, QuizId
+from app.quiz.types import QuizId, QuestionId, AnswerId
 
 
-def quiz_to_response(quiz: Quiz) -> QuizOut:
-    """Convert Quiz model to QuizOut response schema."""
-    return QuizOut(
-        quiz_id=to_quiz_id(quiz.quiz_id),
-        title=quiz.title,
-        description=quiz.description,
-        settings=QuizSettingsOut(
-            randomize_questions=quiz.randomize_questions,
-            randomize_answers=quiz.randomize_answers,
-            show_immediate_feedback=quiz.show_immediate_feedback,
-            time_per_question=quiz.time_per_question,
-            visibility=quiz.visibility,
-            max_participants=quiz.max_participants,
-        ),
-        questions=[
-            QuizQuestionOut(
-                question_id=to_question_id(question.question_id),
-                text=question.text,
-                correct_answer_id=to_answer_id(question.correct_answer_id),
-                answers=[
-                    QuizAnswerOut(
-                        answer_id=to_answer_id(answer.answer_id),
-                        text=answer.text,
-                        is_correct=answer.is_correct,
-                    )
-                    for answer in question.answers
-                ],
-            )
-            for question in quiz.questions
-        ],
-        created_at=quiz.created_at,
-        updated_at=quiz.updated_at,
-    )
-
-
+@frozen
 class QuizService:
-    @staticmethod
-    async def create_quiz(db: AsyncSession, user: User, data: QuizCreate) -> QuizOut:
+    """
+    Immutable service for quiz-related business logic.
+    Stateless service - all methods operate on provided dependencies.
+    """
+
+    def _to_quiz_id(self, value: str | UUID) -> QuizId:
+        """
+        Convert UUID to QuizId branded type.
+        Private method for internal service use only.
+        """
+        if isinstance(value, UUID):
+            return QuizId(str(value))
+        return QuizId(value)
+
+    def _to_question_id(self, value: str | UUID) -> QuestionId:
+        """
+        Convert UUID to QuestionId branded type.
+        Private method for internal service use only.
+        """
+        if isinstance(value, UUID):
+            return QuestionId(str(value))
+        return QuestionId(value)
+
+    def _to_answer_id(self, value: str | UUID) -> AnswerId:
+        """
+        Convert UUID to AnswerId branded type.
+        Private method for internal service use only.
+        """
+        if isinstance(value, UUID):
+            return AnswerId(str(value))
+        return AnswerId(value)
+
+    def _from_quiz_id(self, quiz_id: QuizId) -> UUID:
+        """
+        Convert QuizId branded type to UUID for database operations.
+        Private method for internal service use only.
+        """
+        return UUID(quiz_id)
+
+    def quiz_to_response(self, quiz: Quiz) -> QuizOut:
+        """Convert Quiz model to QuizOut response schema."""
+        return QuizOut(
+            quiz_id=self._to_quiz_id(quiz.quiz_id),
+            title=quiz.title,
+            description=quiz.description,
+            settings=QuizSettingsOut(
+                randomize_questions=quiz.randomize_questions,
+                randomize_answers=quiz.randomize_answers,
+                show_immediate_feedback=quiz.show_immediate_feedback,
+                time_per_question=quiz.time_per_question,
+                visibility=quiz.visibility,
+                max_participants=quiz.max_participants,
+            ),
+            questions=[
+                QuizQuestionOut(
+                    question_id=self._to_question_id(question.question_id),
+                    text=question.text,
+                    correct_answer_id=self._to_answer_id(
+                        question.correct_answer_id
+                    ),
+                    answers=[
+                        QuizAnswerOut(
+                            answer_id=self._to_answer_id(answer.answer_id),
+                            text=answer.text,
+                            is_correct=answer.is_correct,
+                        )
+                        for answer in question.answers
+                    ],
+                )
+                for question in quiz.questions
+            ],
+            created_at=quiz.created_at,
+            updated_at=quiz.updated_at,
+        )
+
+    async def create_quiz(self, db: AsyncSession, user: User, data: QuizCreate) -> QuizOut:
         quiz = Quiz(
             title=data.title,
             description=data.description,
@@ -112,14 +154,14 @@ class QuizService:
             .options(selectinload(Quiz.questions).selectinload(QuizQuestion.answers))
         )
         quiz = result.scalars().first()
-        return quiz_to_response(quiz)
+        return self.quiz_to_response(quiz)
 
-    @staticmethod
-    async def get_quiz(db: AsyncSession, quiz_id: QuizId) -> QuizOut | None:
+    async def get_quiz(self, db: AsyncSession, quiz_id: QuizId) -> QuizOut | None:
         try:
+            uuid_val = self._from_quiz_id(quiz_id)
             result = await db.execute(
                 select(Quiz)
-                .where(Quiz.quiz_id == quiz_id)
+                .where(Quiz.quiz_id == uuid_val)
                 .options(
                     selectinload(Quiz.questions).selectinload(QuizQuestion.answers)
                 )
@@ -127,18 +169,18 @@ class QuizService:
             quiz = result.scalars().first()
             if quiz is None:
                 return None
-            return quiz_to_response(quiz)
+            return self.quiz_to_response(quiz)
         except Exception:
             # Invalid UUID format or other DB errors - treat as not found
             return None
 
-    @staticmethod
     async def update_quiz(
-        db: AsyncSession, quiz_id: QuizId, user: User, data
+        self, db: AsyncSession, quiz_id: QuizId, user: User, data
     ) -> QuizOut | None:
+        uuid_val = self._from_quiz_id(quiz_id)
         result = await db.execute(
             select(Quiz)
-            .where(Quiz.quiz_id == quiz_id)
+            .where(Quiz.quiz_id == uuid_val)
             .options(selectinload(Quiz.questions).selectinload(QuizQuestion.answers))
         )
         quiz = result.scalars().first()
@@ -221,17 +263,17 @@ class QuizService:
         # Re-fetch with eager loading to avoid lazy loading issues
         result = await db.execute(
             select(Quiz)
-            .where(Quiz.quiz_id == quiz_id)
+            .where(Quiz.quiz_id == uuid_val)
             .options(selectinload(Quiz.questions).selectinload(QuizQuestion.answers))
         )
         quiz = result.scalars().first()
-        return quiz_to_response(quiz)
+        return self.quiz_to_response(quiz)
 
-    @staticmethod
-    async def delete_quiz(db: AsyncSession, quiz_id: QuizId, user: User) -> bool:
+    async def delete_quiz(self, db: AsyncSession, quiz_id: QuizId, user: User) -> bool:
+        uuid_val = self._from_quiz_id(quiz_id)
         result = await db.execute(
             select(Quiz)
-            .where(Quiz.quiz_id == quiz_id)
+            .where(Quiz.quiz_id == uuid_val)
             .options(selectinload(Quiz.questions))
         )
         quiz = result.scalars().first()
@@ -252,12 +294,15 @@ class QuizService:
         await db.commit()
         return True
 
-    @staticmethod
-    async def list_quizzes(db: AsyncSession, user: User) -> List[QuizOut]:
+    async def list_quizzes(self, db: AsyncSession, user: User) -> List[QuizOut]:
         result = await db.execute(
             select(Quiz)
             .where(Quiz.creator_id == user.id)
             .options(selectinload(Quiz.questions).selectinload(QuizQuestion.answers))
         )
         quizzes = result.scalars().all()
-        return [quiz_to_response(quiz) for quiz in quizzes]
+        return [self.quiz_to_response(quiz) for quiz in quizzes]
+
+
+# Singleton instance
+quiz_service = QuizService()

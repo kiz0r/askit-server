@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from app.auth.validators import AuthValidators
-from app.core.types import UserId
+from .types import UserId
 
 
 class UserCreate(BaseModel):

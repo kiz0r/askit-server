@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "argon2-cffi>=25.1.0",
     "asyncpg",
+    "attrs>=24.0.0",
     "bcrypt",
     "faker",
     "fastapi",

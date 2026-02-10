@@ -1,9 +1,9 @@
 from fastapi import Request, Response, APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.auth.services.auth_service import AuthService
+from app.auth.services.auth_service import auth_service
 from app.settings import is_dev
 from app.user.schemas import UserCreate, UserLogin, UserOut
-from app.user.services.user_service import UserService
+from app.user.services.user_service import user_service
 from app.auth.services.jwt_service import jwt_service
 from app.database import get_async_db
 from app.auth.exceptions import UserAlreadyExistsError, RefreshTokenMissingError
@@ -15,11 +15,11 @@ router = APIRouter(tags=["Auth"])
 async def register(
     user: UserCreate, response: Response, db: AsyncSession = Depends(get_async_db)
 ) -> UserOut:
-    found_user = await UserService.get_user_by_email(db, user.email)
+    found_user = await user_service.get_user_by_email(db, user.email)
     if found_user is not None:
         raise UserAlreadyExistsError()
 
-    created_user = await UserService.create_user(
+    created_user = await user_service.create_user(
         db, user.username, user.email, user.password
     )
 
@@ -42,11 +42,7 @@ async def register(
         secure=not is_dev(),
     )
 
-    return UserOut(
-        email=created_user.email,
-        username=created_user.username,
-        userId=str(created_user.id),
-    )
+    return user_service.user_to_response(created_user)
 
 
 @router.post("/login", response_model=UserOut)
@@ -55,7 +51,7 @@ async def login(
     response: Response,
     db: AsyncSession = Depends(get_async_db),
 ) -> UserOut:
-    user, access_token, refresh_token = await AuthService.login(
+    user, access_token, refresh_token = await auth_service.login(
         db, data.email, data.password
     )
 
@@ -74,7 +70,7 @@ async def login(
         secure=not is_dev(),
     )
 
-    return UserOut(email=user.email, username=user.username, userId=str(user.id))
+    return user_service.user_to_response(user)
 
 
 @router.post("/refresh")

@@ -1,17 +1,21 @@
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from attrs import frozen
 from .jwt_service import jwt_service
-from .password_service import PasswordService
-from app.user.services.user_service import UserService
+from .password_service import password_service
+from app.user.services.user_service import user_service
 from app.auth.exceptions import InvalidCredentialsError, UserInactiveError
 
-password_service = PasswordService()
 
-
+@frozen
 class AuthService:
-    @staticmethod
-    async def login(db: AsyncSession, email: EmailStr, password: str):
-        user = await UserService.get_user_by_email(db, email)
+    """
+    Immutable service for authentication operations.
+    Orchestrates user, password, and JWT services.
+    """
+
+    async def login(self, db: AsyncSession, email: EmailStr, password: str):
+        user = await user_service.get_user_by_email(db, email)
 
         if user is None or not password_service.verify_password(
             password, user.password_hash
@@ -22,9 +26,13 @@ class AuthService:
             raise UserInactiveError()
 
         # Update last login timestamp
-        await UserService.update_last_login(db, user)
+        await user_service.update_last_login(db, user)
 
         access_token = jwt_service.create_access_token(str(user.id))
         refresh_token = jwt_service.create_refresh_token(str(user.id))
 
         return user, access_token, refresh_token
+
+
+# Singleton instance
+auth_service = AuthService()

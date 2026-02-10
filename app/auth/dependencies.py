@@ -1,7 +1,8 @@
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_async_db
-from app.user.services.user_service import UserService
+from app.user.services.user_service import user_service
+from app.user.types import UserId
 from app.auth.services.jwt_service import jwt_service
 from app.auth.exceptions import NotAuthenticatedError, UserInactiveError
 
@@ -15,8 +16,8 @@ async def get_current_user(
         raise NotAuthenticatedError()
 
     payload = jwt_service.verify_access_token(token)
-    user_id = payload["sub"]
-    user = await UserService.get_user_by_id(db, user_id)
+    user_id = UserId(payload["sub"])
+    user = await user_service.get_user_by_id(db, user_id)
 
     if not user:
         raise NotAuthenticatedError()

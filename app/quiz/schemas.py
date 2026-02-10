@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from enum import Enum
-from app.core.types import QuizId, QuestionId, AnswerId
+from app.quiz.types import QuizId, QuestionId, AnswerId
 
 # Constants
 DEFAULT_MAX_PARTICIPANTS = 5

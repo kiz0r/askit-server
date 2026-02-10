@@ -1,10 +1,16 @@
 from passlib.context import CryptContext
+from attrs import frozen, Factory
 
 
+@frozen
 class PasswordService:
-    _pwd_context = CryptContext(
-        schemes=["argon2"],
-        deprecated="auto",
+    """
+    Immutable service for password hashing and verification.
+    Uses Argon2 algorithm for secure password storage.
+    """
+
+    _pwd_context: CryptContext = Factory(
+        lambda: CryptContext(schemes=["argon2"], deprecated="auto")
     )
 
     def hash_password(self, password: str) -> str:
@@ -12,3 +18,7 @@ class PasswordService:
 
     def verify_password(self, password: str, hashed_password: str) -> bool:
         return self._pwd_context.verify(password, hashed_password)
+
+
+# Singleton instance
+password_service = PasswordService()

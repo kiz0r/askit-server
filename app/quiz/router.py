@@ -4,9 +4,9 @@ from app.auth.dependencies import get_current_user
 from app.database import get_async_db
 from app.models.user import User
 from app.quiz.schemas import QuizCreate, QuizOut, QuizUpdate
-from app.quiz.services import QuizService
+from app.quiz.services import quiz_service
 from app.quiz.exceptions import QuizNotFoundError, QuizAccessDeniedError
-from app.core.types import QuizId
+from app.quiz.types import QuizId
 
 router = APIRouter(tags=["Quiz"])
 
@@ -17,7 +17,7 @@ async def create_quiz(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    quiz = await QuizService.create_quiz(db, current_user, body)
+    quiz = await quiz_service.create_quiz(db, current_user, body)
     return quiz
 
 
@@ -26,13 +26,13 @@ async def list_quizzes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    quizzes = await QuizService.list_quizzes(db, current_user)
+    quizzes = await quiz_service.list_quizzes(db, current_user)
     return quizzes
 
 
 @router.get("/{quiz_id}", response_model=QuizOut, response_model_by_alias=True)
 async def get_quiz(quiz_id: QuizId, db: AsyncSession = Depends(get_async_db)):
-    quiz = await QuizService.get_quiz(db, quiz_id)
+    quiz = await quiz_service.get_quiz(db, quiz_id)
     if quiz is None:
         raise QuizNotFoundError()
 
@@ -46,7 +46,7 @@ async def update_quiz(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    quiz = await QuizService.update_quiz(db, quiz_id, current_user, body)
+    quiz = await quiz_service.update_quiz(db, quiz_id, current_user, body)
     if quiz is None:
         raise QuizAccessDeniedError()
     return quiz
@@ -58,7 +58,7 @@ async def delete_quiz(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    success = await QuizService.delete_quiz(db, quiz_id, current_user)
+    success = await quiz_service.delete_quiz(db, quiz_id, current_user)
     if not success:
         raise QuizAccessDeniedError()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
