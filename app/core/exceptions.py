@@ -20,7 +20,10 @@ class AppException(Exception):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert exception to dictionary format."""
-        error_dict = {"errorCode": self.error_code, "message": self.message}
+        error_dict: Dict[str, Any] = {
+            "errorCode": self.error_code,
+            "message": self.message,
+        }
         if self.details:
             error_dict["details"] = self.details
         return error_dict

@@ -21,7 +21,7 @@ class AuthenticationError(AppException):
 class InvalidCredentialsError(AuthenticationError):
     """Invalid email or password."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="INVALID_CREDENTIALS", message="Invalid email or password"
         )
@@ -30,7 +30,7 @@ class InvalidCredentialsError(AuthenticationError):
 class TokenExpiredError(AuthenticationError):
     """JWT token has expired."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="TOKEN_EXPIRED", message="Authentication token has expired"
         )
@@ -39,7 +39,7 @@ class TokenExpiredError(AuthenticationError):
 class InvalidTokenError(AuthenticationError):
     """Invalid JWT token."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="INVALID_TOKEN", message="Invalid authentication token"
         )
@@ -48,7 +48,7 @@ class InvalidTokenError(AuthenticationError):
 class NotAuthenticatedError(AuthenticationError):
     """User is not authenticated."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="NOT_AUTHENTICATED", message="Authentication required"
         )
@@ -57,7 +57,7 @@ class NotAuthenticatedError(AuthenticationError):
 class RefreshTokenMissingError(AuthenticationError):
     """Refresh token is missing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="REFRESH_TOKEN_MISSING", message="Refresh token is required"
         )
@@ -81,7 +81,7 @@ class AuthorizationError(AppException):
 class UserInactiveError(AuthorizationError):
     """User account is inactive."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(error_code="USER_INACTIVE", message="User account is inactive")
 
 
@@ -130,7 +130,7 @@ class InvalidPasswordError(ValidationError):
 class InvalidEmailError(ValidationError):
     """Invalid email format."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(error_code="INVALID_EMAIL", message="Invalid email format")
 
 
@@ -138,7 +138,7 @@ class InvalidEmailError(ValidationError):
 class UserAlreadyExistsError(AppException):
     """User with this email already exists."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="USER_ALREADY_EXISTS",
             message="User with this email already exists",
@@ -149,7 +149,7 @@ class UserAlreadyExistsError(AppException):
 class UsernameAlreadyExistsError(AppException):
     """Username already taken."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="USERNAME_ALREADY_EXISTS",
             message="Username already taken",

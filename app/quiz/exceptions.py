@@ -7,7 +7,7 @@ from app.core.exceptions import AppException
 class QuizNotFoundError(AppException):
     """Quiz not found."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="QUIZ_NOT_FOUND",
             message="Quiz not found",
@@ -18,7 +18,7 @@ class QuizNotFoundError(AppException):
 class QuizAccessDeniedError(AppException):
     """User cannot access or modify this quiz."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             error_code="QUIZ_ACCESS_DENIED",
             message="You don't have permission to access or modify this quiz",

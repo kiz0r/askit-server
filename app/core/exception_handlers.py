@@ -8,7 +8,7 @@ from app.core.exceptions import AppException
 logger = structlog.get_logger(__name__)
 
 
-async def app_exception_handler(request: Request, exc: AppException):
+async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     """Handle custom application exceptions and return flat structured response."""
     logger.warning(
         "application_exception",
@@ -21,7 +21,9 @@ async def app_exception_handler(request: Request, exc: AppException):
     return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """
     Handle Pydantic validation errors and return structured response.
 
@@ -49,7 +51,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
+async def pydantic_validation_exception_handler(
+    request: Request, exc: ValidationError
+) -> JSONResponse:
     """Handle Pydantic ValidationError from custom validators."""
     errors = []
     for error in exc.errors():
@@ -73,7 +77,7 @@ async def pydantic_validation_exception_handler(request: Request, exc: Validatio
     )
 
 
-async def generic_exception_handler(request: Request, exc: Exception):
+async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Catch-all handler for unexpected exceptions.
 

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import cast
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -72,11 +73,11 @@ class UserService:
 
     async def get_user_by_email(self, db: AsyncSession, email: EmailStr) -> User | None:
         user = await db.execute(select(User).where(User.email == email))
-        return user.scalars().first()
+        return cast(User | None, user.scalars().first())
 
     async def get_user_by_id(self, db: AsyncSession, user_id: UserId) -> User | None:
         uuid_val = self._from_user_id(user_id)
-        return await db.get(User, uuid_val)
+        return cast(User | None, await db.get(User, uuid_val))
 
     async def update_last_login(self, db: AsyncSession, user: User) -> None:
         user.last_login = datetime.now(timezone.utc)

@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
@@ -16,7 +17,7 @@ async def create_quiz(
     body: QuizCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-):
+) -> QuizOut:
     quiz = await quiz_service.create_quiz(db, current_user, body)
     return quiz
 
@@ -25,13 +26,15 @@ async def create_quiz(
 async def list_quizzes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-):
+) -> List[QuizOut]:
     quizzes = await quiz_service.list_quizzes(db, current_user)
     return quizzes
 
 
 @router.get("/{quiz_id}", response_model=QuizOut, response_model_by_alias=True)
-async def get_quiz(quiz_id: QuizId, db: AsyncSession = Depends(get_async_db)):
+async def get_quiz(
+    quiz_id: QuizId, db: AsyncSession = Depends(get_async_db)
+) -> QuizOut:
     quiz = await quiz_service.get_quiz(db, quiz_id)
     if quiz is None:
         raise QuizNotFoundError()
@@ -45,9 +48,13 @@ async def update_quiz(
     body: QuizUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-):
+) -> QuizOut:
     quiz = await quiz_service.update_quiz(db, quiz_id, current_user, body)
     if quiz is None:
+        # Distinguish between not found and access denied
+        existing_quiz = await quiz_service.get_quiz(db, quiz_id)
+        if existing_quiz is None:
+            raise QuizNotFoundError()
         raise QuizAccessDeniedError()
     return quiz
 
@@ -57,8 +64,12 @@ async def delete_quiz(
     quiz_id: QuizId,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-):
-    success = await quiz_service.delete_quiz(db, quiz_id, current_user)
-    if not success:
+) -> Response:
+    delete_result = await quiz_service.delete_quiz(db, quiz_id, current_user)
+    if not delete_result:
+        quiz = await quiz_service.get_quiz(db, quiz_id)
+        if quiz is None:
+            raise QuizNotFoundError()
+
         raise QuizAccessDeniedError()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

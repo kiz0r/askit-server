@@ -1,3 +1,4 @@
+from typing import Dict
 from fastapi import Request, Response, APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.services.auth_service import auth_service
@@ -77,7 +78,7 @@ async def login(
 async def refresh(
     request: Request,
     response: Response,
-):
+) -> Dict[str, str]:
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise RefreshTokenMissingError()
@@ -99,7 +100,7 @@ async def refresh(
 
 
 @router.post("/logout")
-async def logout(response: Response):
+async def logout(response: Response) -> Dict[str, str]:
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
 

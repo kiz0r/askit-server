@@ -10,12 +10,17 @@ from app.models.quiz import Quiz, QuizQuestion, QuizAnswer
 from app.quiz.schemas import (
     QuizCreate,
     QuizOut,
+    QuizUpdate,
     QuizSettingsOut,
     QuizQuestionOut,
     QuizAnswerOut,
 )
 from app.quiz.exceptions import InvalidQuizDataError
 from app.quiz.types import QuizId, QuestionId, AnswerId
+
+# Constants for estimated time calculation
+READING_TIME_PER_QUESTION_MS = 5000  # 5 seconds per question for reading/comprehension
+SAFETY_BUFFER_MULTIPLIER = 1.1  # 10% extra time to avoid feeling rushed
 
 
 @frozen
@@ -61,6 +66,37 @@ class QuizService:
 
     def quiz_to_response(self, quiz: Quiz) -> QuizOut:
         """Convert Quiz model to QuizOut response schema."""
+        # Calculate estimated time with human factors:
+        # - Base time: configured time per question
+        # - Reading buffer: additional time for reading/comprehension
+        # - Safety buffer: extra time to avoid feeling rushed
+        base_time = len(quiz.questions) * quiz.time_per_question
+        reading_buffer = len(quiz.questions) * READING_TIME_PER_QUESTION_MS
+        estimated_time = int((base_time + reading_buffer) * SAFETY_BUFFER_MULTIPLIER)
+
+        # Build questions list with validation
+        questions_out: List[QuizQuestionOut] = []
+        for question in quiz.questions:
+            if question.correct_answer_id is None:
+                raise InvalidQuizDataError(
+                    f"Question {question.question_id} missing correct_answer_id"
+                )
+            questions_out.append(
+                QuizQuestionOut(
+                    question_id=self._to_question_id(question.question_id),
+                    text=question.text,
+                    correct_answer_id=self._to_answer_id(question.correct_answer_id),
+                    answers=[
+                        QuizAnswerOut(
+                            answer_id=self._to_answer_id(answer.answer_id),
+                            text=answer.text,
+                            is_correct=answer.is_correct,
+                        )
+                        for answer in question.answers
+                    ],
+                )
+            )
+
         return QuizOut(
             quiz_id=self._to_quiz_id(quiz.quiz_id),
             title=quiz.title,
@@ -73,29 +109,15 @@ class QuizService:
                 visibility=quiz.visibility,
                 max_participants=quiz.max_participants,
             ),
-            questions=[
-                QuizQuestionOut(
-                    question_id=self._to_question_id(question.question_id),
-                    text=question.text,
-                    correct_answer_id=self._to_answer_id(
-                        question.correct_answer_id
-                    ),
-                    answers=[
-                        QuizAnswerOut(
-                            answer_id=self._to_answer_id(answer.answer_id),
-                            text=answer.text,
-                            is_correct=answer.is_correct,
-                        )
-                        for answer in question.answers
-                    ],
-                )
-                for question in quiz.questions
-            ],
+            questions=questions_out,
+            estimated_time=estimated_time,
             created_at=quiz.created_at,
             updated_at=quiz.updated_at,
         )
 
-    async def create_quiz(self, db: AsyncSession, user: User, data: QuizCreate) -> QuizOut:
+    async def create_quiz(
+        self, db: AsyncSession, user: User, data: QuizCreate
+    ) -> QuizOut:
         quiz = Quiz(
             title=data.title,
             description=data.description,
@@ -170,12 +192,12 @@ class QuizService:
             if quiz is None:
                 return None
             return self.quiz_to_response(quiz)
-        except Exception:
-            # Invalid UUID format or other DB errors - treat as not found
+        except ValueError:
+            # Invalid UUID format - treat as not found
             return None
 
     async def update_quiz(
-        self, db: AsyncSession, quiz_id: QuizId, user: User, data
+        self, db: AsyncSession, quiz_id: QuizId, user: User, data: QuizUpdate
     ) -> QuizOut | None:
         uuid_val = self._from_quiz_id(quiz_id)
         result = await db.execute(

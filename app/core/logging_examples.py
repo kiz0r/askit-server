@@ -10,13 +10,13 @@ logger = get_logger(__name__)
 
 
 # Example 1: Simple info log
-def example_info():
+def example_info() -> None:
     logger.info("user_created", user_id="123", username="john_doe")
     # Output: {"event": "user_created", "user_id": "123", "username": "john_doe", ...}
 
 
 # Example 2: Warning with context
-def example_warning():
+def example_warning() -> None:
     logger.warning(
         "quiz_limit_reached",
         user_id="456",
@@ -26,7 +26,7 @@ def example_warning():
 
 
 # Example 3: Error with exception
-def example_error():
+def example_error() -> None:
     try:
         # Some operation
         raise ValueError("Invalid quiz format")
@@ -40,7 +40,7 @@ def example_error():
 
 
 # Example 4: Debug logs (only shown when LOG_LEVEL=DEBUG)
-def example_debug():
+def example_debug() -> None:
     logger.debug(
         "database_query_executed",
         query="SELECT * FROM users",

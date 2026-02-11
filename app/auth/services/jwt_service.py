@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, cast
 from jwt import ExpiredSignatureError, InvalidTokenError as JWTInvalidTokenError
 from attrs import frozen
 from app.settings import ENV_SETTINGS
@@ -35,7 +36,7 @@ class JWTService:
             "exp": now + timedelta(seconds=expires_in),
         }
 
-        return jwt.encode(payload, key, algorithm=self._algorithm)
+        return cast(str, jwt.encode(payload, key, algorithm=self._algorithm))
 
     def create_access_token(self, user_id: str) -> str:
         return self._create_token(
@@ -53,13 +54,13 @@ class JWTService:
             expires_in=self.refresh_token_lifetime,
         )
 
-    def verify_access_token(self, token: str) -> dict:
+    def verify_access_token(self, token: str) -> Dict[str, Any]:
         return self._decode(token, self._access_secret, "access")
 
-    def verify_refresh_token(self, token: str) -> dict:
+    def verify_refresh_token(self, token: str) -> Dict[str, Any]:
         return self._decode(token, self._refresh_secret, "refresh")
 
-    def _decode(self, token: str, key: str, expected_type: str) -> dict:
+    def _decode(self, token: str, key: str, expected_type: str) -> Dict[str, Any]:
         try:
             payload = jwt.decode(token, key, algorithms=[self._algorithm])
 

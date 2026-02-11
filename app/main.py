@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
@@ -18,7 +19,6 @@ from app.settings import ENV_SETTINGS
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RequestIDMiddleware
 
-
 # Configure structured logging
 configure_logging(
     log_level=ENV_SETTINGS.LOG_LEVEL,
@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(
         "application_startup",
         environment=ENV_SETTINGS.ENVIRONMENT,
@@ -44,9 +44,9 @@ app = FastAPI(
     version="dev",
     lifespan=lifespan,
     redirect_slashes=False,
-    generate_unique_id_function=lambda route: f"{route.tags[0]}-{route.name}"
-    if route.tags
-    else route.name,
+    generate_unique_id_function=lambda route: (
+        f"{route.tags[0]}-{route.name}" if route.tags else route.name
+    ),
 )
 
 # Register exception handlers

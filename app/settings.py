@@ -9,15 +9,15 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: Literal["development", "test", "production"] = "development"
     APP_PORT: int = 8000
-    
+
     # Logging Settings
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     LOG_JSON: bool = False  # Set to True in production for JSON logs
-    
+
     # CORS Settings
     CORS_ORIGINS: str = Field(
         default="http://localhost:5173",
-        description="Comma-separated list of allowed CORS origins"
+        description="Comma-separated list of allowed CORS origins",
     )
 
     POSTGRES_USER: str = Field(..., min_length=3)
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
 
     model_config = SettingsConfigDict(env_file=".env")
-    
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Parse CORS_ORIGINS string into a list."""
