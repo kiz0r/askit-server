@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base
 from app.settings import ENV_SETTINGS
@@ -14,12 +16,12 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 
-async def init_db():
+async def init_db() -> None:
     """Async tables creation"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def get_async_db():
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
