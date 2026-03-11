@@ -6,6 +6,7 @@ from app.quiz.types import QuizId, QuestionId, AnswerId
 
 # Constants
 DEFAULT_MAX_PARTICIPANTS = 5
+MAX_PARTICIPANTS_LIMIT = 30
 DEFAULT_TIME_PER_QUESTION_MS = 30000  # Default time per question in milliseconds
 
 
@@ -54,6 +55,7 @@ class QuizSettingsCreate(BaseModel):
     max_participants: int = Field(
         default=DEFAULT_MAX_PARTICIPANTS,
         ge=1,
+        le=MAX_PARTICIPANTS_LIMIT,
         serialization_alias="maxParticipants",
         validation_alias="maxParticipants",
     )
@@ -117,3 +119,7 @@ class QuizOut(BaseModel):
     updated_at: datetime = Field(serialization_alias="updatedAt")
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
+
+class QuizListOut(BaseModel):
+    items: List[QuizOut]

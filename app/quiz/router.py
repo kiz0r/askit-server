@@ -1,10 +1,9 @@
-from typing import List
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
 from app.database import get_async_db
 from app.models.user import User
-from app.quiz.schemas import QuizCreate, QuizOut, QuizUpdate
+from app.quiz.schemas import QuizCreate, QuizOut, QuizUpdate, QuizListOut
 from app.quiz.services import quiz_service
 from app.quiz.exceptions import QuizNotFoundError, QuizAccessDeniedError
 from app.quiz.types import QuizId
@@ -22,13 +21,13 @@ async def create_quiz(
     return quiz
 
 
-@router.get("", response_model=list[QuizOut], response_model_by_alias=True)
+@router.get("", response_model=QuizListOut, response_model_by_alias=True)
 async def list_quizzes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-) -> List[QuizOut]:
+) -> QuizListOut:
     quizzes = await quiz_service.list_quizzes(db, current_user)
-    return quizzes
+    return QuizListOut(items=quizzes)
 
 
 @router.get("/{quiz_id}", response_model=QuizOut, response_model_by_alias=True)
