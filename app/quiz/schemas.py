@@ -1,13 +1,12 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from enum import Enum
 from app.quiz.types import QuizId, QuestionId, AnswerId
 
 # Constants
 DEFAULT_MAX_PARTICIPANTS = 5
-SECONDS_TO_MS = 1000  # Conversion factor for seconds to milliseconds
-DEFAULT_TIME_PER_QUESTION_SECONDS = 30  # Default time per question in seconds
+DEFAULT_TIME_PER_QUESTION_MS = 30000  # Default time per question in milliseconds
 
 
 class QuizVisibility(str, Enum):
@@ -46,10 +45,10 @@ class QuizSettingsCreate(BaseModel):
         validation_alias="showImmediateFeedback",
     )
     time_per_question: int = Field(
-        default=DEFAULT_TIME_PER_QUESTION_SECONDS,
+        default=DEFAULT_TIME_PER_QUESTION_MS,
         serialization_alias="timePerQuestion",
         validation_alias="timePerQuestion",
-        description="Time per question in seconds (will be converted to milliseconds internally)",
+        description="Time per question in milliseconds",
     )
     visibility: QuizVisibility = QuizVisibility.public
     max_participants: int = Field(
@@ -59,13 +58,7 @@ class QuizSettingsCreate(BaseModel):
         validation_alias="maxParticipants",
     )
 
-    model_config = ConfigDict(populate_by_name=True, validate_default=True)
-
-    @field_validator("time_per_question", mode="after")
-    @classmethod
-    def convert_seconds_to_ms(cls, value: int) -> int:
-        """Convert time_per_question from seconds to milliseconds for internal storage."""
-        return value * SECONDS_TO_MS
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class QuizCreate(BaseModel):
