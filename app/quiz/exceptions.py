@@ -27,7 +27,7 @@ class QuizAccessDeniedError(AppException):
 
 
 class InvalidQuizDataError(AppException):
-    """Invalid quiz data."""
+    """Invalid quiz data (title, description, tags, questions, etc.)."""
 
     def __init__(self, message: str):
         super().__init__(
