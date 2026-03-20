@@ -10,6 +10,7 @@ from sqlalchemy import (
     Enum,
     DateTime,
     VARCHAR,
+    Table,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -19,12 +20,36 @@ from app.database import Base
 
 
 class QuizSettingsSchema(BaseModel):
-    randomize_questions: bool = False
     randomize_answers: bool = False
-    show_immediate_feedback: bool = False
-    time_per_question: int = 30_000
+    default_time_per_question: int = 30_000
     visibility: Literal["public", "private"]
     max_participants: Optional[int] = None
+
+
+# Many-to-many association table for Quiz <-> Tag
+quiz_tags = Table(
+    "quiz_tags",
+    Base.metadata,
+    Column("quiz_id", UUID, ForeignKey("quizzes.quiz_id"), primary_key=True),
+    Column("tag_id", UUID, ForeignKey("tags.tag_id"), primary_key=True),
+)
+
+
+class Tag(Base):
+    """Tags for categorizing quizzes."""
+
+    __tablename__ = "tags"
+
+    tag_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        index=True,
+    )
+    name = Column(VARCHAR(30), nullable=False, unique=True, index=True)
+
+    quizzes = relationship("Quiz", secondary=quiz_tags, back_populates="tags")
 
 
 class Quiz(Base):
@@ -43,24 +68,29 @@ class Quiz(Base):
     title = Column(VARCHAR(50), nullable=False)
     description = Column(VARCHAR(300), nullable=True)
 
-    randomize_questions = Column(Boolean, default=False)
+    # Settings (randomize_questions, show_immediate_feedback moved to room/session level)
     randomize_answers = Column(Boolean, default=False)
-    show_immediate_feedback = Column(Boolean, default=False)
-    time_per_question = Column(Integer, default=30_000)  # milliseconds
+    default_time_per_question = Column(
+        Integer, default=30_000
+    )  # UI preset, milliseconds
     visibility = Column(
         Enum(QuizVisibility, name="quiz_visibility"),
         nullable=False,
         default=QuizVisibility.public,
-    )  # public / private
+    )
     max_participants = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     questions = relationship(
-        "QuizQuestion", back_populates="quiz", cascade="all, delete-orphan"
+        "QuizQuestion",
+        back_populates="quiz",
+        cascade="all, delete-orphan",
+        order_by="QuizQuestion.position",
     )
     sessions = relationship("QuizSession", back_populates="quiz")
+    tags = relationship("Tag", secondary=quiz_tags, back_populates="quizzes")
 
 
 class QuizQuestion(Base):
@@ -75,15 +105,13 @@ class QuizQuestion(Base):
     )
     quiz_id = Column(UUID, ForeignKey("quizzes.quiz_id"), nullable=False, index=True)
     text = Column(VARCHAR(255), nullable=False)
-    correct_answer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey(
-            "quiz_answers.answer_id",
-            name="fk_question_correct_answer",
-            ondelete="SET NULL",
-        ),
-        nullable=True,
-    )
+    position = Column(
+        Integer, nullable=False, default=1
+    )  # For drag & drop ordering (1-indexed)
+    time_limit = Column(
+        Integer, nullable=False, default=30_000
+    )  # Per-question time in ms
+    is_hidden = Column(Boolean, nullable=False, default=False)  # Hide from game
 
     quiz = relationship("Quiz", back_populates="questions")
     answers = relationship(
